@@ -47,3 +47,7 @@ nunit-*.xml
 # Scraper specific stuff
 output_example.json
 response.json
+
+
+# System stuff
+.DS_Store
