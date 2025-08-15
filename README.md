@@ -25,7 +25,7 @@ dotnet test DotnetScraper.Tests
 ```
 
 ## Configuration
-The scraper uses an `inputs.yaml` file to define the products to scrape. Each product should have a `productID` and a `domain`.
+The scraper uses an `inputs.yaml` file to define the items to scrape.
 
 ```yaml
 inputs:
