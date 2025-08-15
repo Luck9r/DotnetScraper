@@ -79,7 +79,6 @@ public class Scraper
                 }
 
                 var response = await ScrapeEndpointAsync(url);
-                File.WriteAllText("response.json", response);
 
                 if (!string.IsNullOrEmpty(response))
                 {
