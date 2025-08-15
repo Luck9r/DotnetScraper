@@ -1,20 +1,27 @@
-using System.Collections.Generic;
+using YamlDotNet.Serialization;
 
 public class FieldsConfig
 {
-    public required List<EndpointConfig> endpoints { get; set; }
+    [YamlMember(Alias = "endpoints")]
+    public required List<EndpointConfig> Endpoints { get; set; }
 }
 
 public class EndpointConfig
 {
-    public required string name { get; set; }
-    public required string url { get; set; }
-    public required List<FieldConfig> fields { get; set; }
+    [YamlMember(Alias = "name")]
+    public required string Name { get; set; }
+    [YamlMember(Alias = "url")]
+    public required string Url { get; set; }
+    [YamlMember(Alias = "fields")]
+    public required List<FieldConfig> Fields { get; set; }
 }
 
 public class FieldConfig
 {
-    public required string name { get; set; }
-    public string? path { get; set; }
-    public string? constantValue { get; set; }
+    [YamlMember(Alias = "name")]
+    public required string Name { get; set; }
+    [YamlMember(Alias = "path")]
+    public string? Path { get; set; }
+    [YamlMember(Alias = "constantValue")]
+    public string? ConstantValue { get; set; }
 }

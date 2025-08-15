@@ -1,41 +1,43 @@
-using System;
-using System.Net.Http;
-
-using System.Threading.Tasks;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 using Newtonsoft.Json.Linq;
 
-public class Scraper
+public interface IHttpClientFactory
 {
-    private readonly HttpClient _httpClient;
-    
-    public Scraper()
+    HttpClient CreateClient();
+}
+
+public class DefaultHttpClientFactory : IHttpClientFactory
+{
+    public HttpClient CreateClient()
     {
         var handler = new HttpClientHandler
         {
             AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate | System.Net.DecompressionMethods.Brotli
         };
-        _httpClient = new HttpClient(handler);
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:141.0) Gecko/20100101 Firefox/141.0");
-        _httpClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-        _httpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br, zstd");
-        _httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.5");
-        _httpClient.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "document");
-        _httpClient.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "navigate");
-        _httpClient.DefaultRequestHeaders.Add("Sec-Fetch-Site", "none");
-        _httpClient.DefaultRequestHeaders.Add("Sec-Fetch-User", "?1");
-        _httpClient.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
-        _httpClient.DefaultRequestHeaders.Add("brand", "TNF");
-        _httpClient.DefaultRequestHeaders.Add("channel", "ECOMM");
-        // these will need to be adjusted if the site country is different
-        _httpClient.DefaultRequestHeaders.Add("siteid", "TNF-US");
-        _httpClient.DefaultRequestHeaders.Add("source", "ECOM15");
-        _httpClient.DefaultRequestHeaders.Add("locale", "en_US");
-        _httpClient.DefaultRequestHeaders.Add("region", "NORA");
-
+        var client = new HttpClient(handler);
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:141.0) Gecko/20100101 Firefox/141.0");
+        client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br, zstd");
+        client.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.5");
+        client.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "document");
+        client.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "navigate");
+        client.DefaultRequestHeaders.Add("Sec-Fetch-Site", "none");
+        client.DefaultRequestHeaders.Add("Sec-Fetch-User", "?1");
+        client.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
+        client.DefaultRequestHeaders.Add("brand", "TNF");
+        client.DefaultRequestHeaders.Add("channel", "ECOMM");
+        client.DefaultRequestHeaders.Add("siteid", "TNF-US");
+        client.DefaultRequestHeaders.Add("source", "ECOM15");
+        client.DefaultRequestHeaders.Add("locale", "en_US");
+        client.DefaultRequestHeaders.Add("region", "NORA");
+        return client;
+    }
+}
+public class Scraper
+{
+    private readonly HttpClient _httpClient;
+    public Scraper(IHttpClientFactory httpClientFactory)
+    {
+        _httpClient = httpClientFactory.CreateClient();
     }
 
     public virtual async Task<string> ScrapeEndpointAsync(string url)
@@ -63,14 +65,14 @@ public class Scraper
 
     public async Task<JArray> ScrapeAllAsync(InputsFile inputsFile, FieldsConfig fieldsConfig)
     {
-        var outputItems = new JArray(); 
+        var outputItems = new JArray();
 
-        foreach (var input in inputsFile.inputs)
+        foreach (var input in inputsFile.Inputs)
         {
             var parsedItem = new JObject();
-            foreach (var endpoint in fieldsConfig.endpoints)
+            foreach (var endpoint in fieldsConfig.Endpoints)
             {
-                var url = endpoint.url;
+                var url = endpoint.Url;
 
                 foreach (var kvp in input)
                 {
@@ -84,37 +86,41 @@ public class Scraper
                 {
                     var doc = JObject.Parse(response);
 
-                    foreach (var field in endpoint.fields)
+                    foreach (var field in endpoint.Fields)
                     {
                         JToken? fieldValue = null as JToken;
                         try
                         {
-                            if (!string.IsNullOrEmpty(field.constantValue))
+                            if (!string.IsNullOrEmpty(field.ConstantValue))
                             {
-                                fieldValue = JToken.FromObject(field.constantValue); 
+                                fieldValue = JToken.FromObject(field.ConstantValue);
                             }
-                            else if (!string.IsNullOrEmpty(field.path))
+                            else if (!string.IsNullOrEmpty(field.Path))
                             {
-                                var tokens = doc.SelectTokens(field.path);
-                                if (tokens.Count() == 1) { 
+                                var tokens = doc.SelectTokens(field.Path);
+                                if (tokens.Count() == 1)
+                                {
                                     fieldValue = JToken.FromObject(tokens.First());
-                                } else {
+                                }
+                                else
+                                {
                                     fieldValue = JToken.FromObject(tokens);
                                 }
                             }
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
-                            Console.WriteLine($"Error extracting field '{field.name}', {e}");
-                        } 
-                        parsedItem.Add(field.name, fieldValue);   
+                            Console.WriteLine($"Error extracting field '{field.Name}', {e}");
+                        }
+                        parsedItem.Add(field.Name, fieldValue);
                     }
                 }
             }
-            outputItems.Add(parsedItem as JToken);
+            if (parsedItem.Properties().Any())
+                outputItems.Add(parsedItem as JToken);
         }
 
         return outputItems;
     }
-    
+
 }

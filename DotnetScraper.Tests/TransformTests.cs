@@ -90,6 +90,7 @@ public class TransformTests
 
         var transform = new Transform();
         var result = transform.TransformData(input);
+        Assert.NotEmpty(result);
         var stars = result[0]["starRatingDistribution"] as JObject;
         Assert.Equal("50", stars["1 Star"]["number"].ToString());
         Assert.Equal("1.8", stars["1 Star"]["percentage"].ToString());
@@ -113,6 +114,7 @@ public class TransformTests
         var input = new JArray { new JObject { ["breadcrumbs"] = new JArray() } };
         var transform = new Transform();
         var result = transform.TransformData(input);
+        Assert.NotEmpty(result);
         Assert.Equal("Home", result[0]["category"]!.ToString());
         Assert.Equal("Home", result[0]["categoryLvl1"]!.ToString());
     }
@@ -123,6 +125,7 @@ public class TransformTests
         var input = new JArray { new JObject { ["numberOfCustomerReviews"] = 100 } };
         var transform = new Transform();
         var result = transform.TransformData(input);
+        Assert.NotEmpty(result);
         Assert.Null(result[0]["starRatingDistribution"]);
     }
 

@@ -3,7 +3,8 @@ using YamlDotNet.Serialization.NamingConventions;
 
 public class InputsFile
 {
-    public required List<Dictionary<string, object>> inputs { get; set; }
+    [YamlMember(Alias = "inputs")]
+    public required List<Dictionary<string, object>> Inputs { get; set; }
 }
 
 class Program
@@ -16,25 +17,10 @@ class Program
             Console.WriteLine("No fields found in fields.yaml");
             return;
         }
-        var yamlDeserializer = new DeserializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .Build();
+        var fieldsConfig = LoadYamlConfig<FieldsConfig>("fields.yaml");
+        var inputsFile = LoadYamlConfig<InputsFile>("inputs.yaml");
 
-        var fieldsConfig = yamlDeserializer.Deserialize<FieldsConfig>(fieldsYaml);
-
-        var inputsYAML = File.ReadAllText("inputs.yaml");
-        if (string.IsNullOrEmpty(inputsYAML))
-        {
-            Console.WriteLine("No inputs found in inputs.yaml");
-            return;
-        }
-        var deserializer = new DeserializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .Build();
-
-        var inputsFile = deserializer.Deserialize<InputsFile>(inputsYAML);
-
-        var scraper = new Scraper();
+        var scraper = new Scraper(new DefaultHttpClientFactory());
 
         var outputItems = await scraper.ScrapeAllAsync(inputsFile, fieldsConfig);
         if (outputItems.Count == 0)
@@ -48,5 +34,18 @@ class Program
         var transformedItems = transform.TransformData(outputItems);
         var json = transformedItems.ToString();
         File.WriteAllText("output.json", json);
+    }
+
+    private static T LoadYamlConfig<T>(string filePath)
+    {
+        var yaml = File.ReadAllText(filePath);
+        if (string.IsNullOrEmpty(yaml))
+            throw new FileNotFoundException($"No content found in {filePath}");
+
+        var deserializer = new DeserializerBuilder()
+            .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .Build();
+
+        return deserializer.Deserialize<T>(yaml);
     }
 }
